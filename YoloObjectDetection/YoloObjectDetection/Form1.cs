@@ -20,7 +20,7 @@ namespace ONNXObjectDetection
         {
             InitializeComponent();
         }
-
+        //選取欲辨識圖片的函式
         private void btnSelect_Click(object sender, EventArgs e)
         {
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
@@ -29,32 +29,34 @@ namespace ONNXObjectDetection
             }
         }
 
+        //執行物件偵測
         private void btnDetect_Click(object sender, EventArgs e)
         {
-            var modelFilePath = "Model/TinyYolo2_model.onnx";
-            MLContext mlContext = new MLContext();
+            var modelFilePath = "Model/TinyYolo2_model.onnx";       //YOLO模型的位置
+            MLContext mlContext = new MLContext();                            //建立MLContext類別的物件
 
             try
             {
-                // Load Data
+                // 載入指定資料夾中的所有圖片進行物件偵測
                 IEnumerable<ImageData> images = ImageData.ReadFromFile("images");
                 IDataView imageDataView = mlContext.Data.LoadFromEnumerable(images);
 
-                // Create instance of model scorer
+                // 建立類別的物件
                 var modelScorer = new OnnxModel("images", modelFilePath, mlContext);
 
-                // Use model to score data
+                // 物件資料中的圖片並取得偵測結果
                 IEnumerable<float[]> probabilities = modelScorer.Score(imageDataView);
 
-                // Post-process model output
+                // 解析偵測結果
                 YoloOutputParser parser = new YoloOutputParser();
 
+                //取得偵測到的物件的座標位置和大小
                 var boundingBoxes =
                     probabilities
                     .Select(probability => parser.ParseOutputs(probability))
                     .Select(boxes => parser.FilterBoundingBoxes(boxes, 5, .5F));
 
-                // Draw bounding boxes for detected objects in each of the images
+                // 繪製被偵測的圖片中辨識成功的物件
                 for (var i = 0; i < images.Count(); i++)
                 {
                     string imageFileName = images.ElementAt(i).Label;
@@ -70,6 +72,7 @@ namespace ONNXObjectDetection
             }
         }
 
+        //繪製物件的位置矩形
         void DrawBoundingBox(string inputImageLocation, string imageName, IList<YoloBoundingBox> filteredBoundingBoxes)
         {
             Image image = Image.FromFile(Path.Combine(inputImageLocation, imageName));
@@ -122,6 +125,7 @@ namespace ONNXObjectDetection
             picDetected.ImageLocation=imageName ;
         }
 
+        //顯示辨識結果的函式
         void LogDetectedObjects(string imageName, IList<YoloBoundingBox> boundingBoxes)
         {
             Trace.WriteLine($".....The objects in the image {imageName} are detected as below....");
